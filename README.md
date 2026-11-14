@@ -1,107 +1,82 @@
-# jira-works
+# Jira Works
 
-# 工作台的圖片與部署
+個人使用的 Jira 牌卡整理工作台。前端部署於 GitHub Pages，牌卡、專案與留言資料儲存於 Supabase。
 
-`index.html` 的圖片已無損拆到 `assets/images/`。提交與部署時需同時包含 HTML 和整個 `assets/` 目錄；GitLab Pages 已設定複製兩者。
+- 線上工作台：<https://jack-bi.github.io/jiraworks/>
+- GitHub Repository：<https://github.com/jack-bi/jiraworks>
 
-本機預覽請在此目錄執行 `python3 -m http.server 8000`，再開啟 <http://localhost:8000/>。此版本需透過 HTTP 讀取圖片，不能只雙擊 HTML。
+## 資料儲存方式
 
-「備份 JSON」與「匯出完整 HTML」仍會包含所有圖片，完整分享 HTML 可單獨傳送與開啟。完整分享檔仍可能很大，請勿直接覆蓋並提交到 Git。
+- `projects`、`tasks`、`comments`：儲存於 Supabase，可跨電腦同步。
+- 圖片附件 metadata：儲存於 Supabase 的 `tasks.attachments`。
+- 新上傳的圖片檔案：儲存於 Supabase Storage 的 `task-images` bucket，可跨電腦同步。
+- 舊版圖片仍可從 GitHub Pages 的 `assets/images/` 或原瀏覽器 IndexedDB 讀取。
+- `index.html` 內嵌的快照：只供資料庫空白時首次匯入，不是線上資料的主要來源。
 
-若要把新的完整分享檔放回專案，先用它取代 `index.html`，再執行：
+> 目前 Supabase migration 的 RLS 規則允許匿名讀寫，僅適合個人測試資料。不要將公司或敏感資料放入這個專案。
+
+## 本機預覽
+
+在專案目錄執行：
 
 ```sh
-python3 scripts/externalize-images.py index.html
+python3 -m http.server 8000
 ```
 
-腳本會將圖片還原為原始檔案並更新 HTML 的相對路徑；不會降低畫質，也不會自動刪除舊圖片。轉換後請一併提交 `index.html` 與新產生的圖片。
+開啟 <http://localhost:8000/>。圖片使用相對路徑載入，因此不能直接雙擊 `index.html` 預覽。
 
-## Getting started
+## 發布到 GitHub Pages
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+修改完成後提交並推送到 `main`：
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-* [Create](https://docs.gitlab.com/user/project/repository/web_editor/#create-a-file) or [upload](https://docs.gitlab.com/user/project/repository/web_editor/#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
-
-```
-cd existing_repo
-git remote add origin https://gitlab.com/jackcheng03/jira-works.git
-git branch -M main
-git push -uf origin main
+```sh
+git add .
+git commit -m "描述這次修改"
+git push origin main
 ```
 
-## Integrate with your tools
+GitHub Pages 會從這個 repository 發布網站。部署完成後開啟：
 
-* [Set up project integrations](https://gitlab.com/jackcheng03/jira-works/-/settings/integrations)
+<https://jack-bi.github.io/jiraworks/>
 
-## Collaborate with your team
+若仍看到舊版本，可等待幾分鐘後強制重新整理：
 
-* [Invite team members and collaborators](https://docs.gitlab.com/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/user/project/merge_requests/creating_merge_requests/)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/user/project/issues/managing_issues/#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+- macOS：`Command + Shift + R`
+- Windows：`Ctrl + Shift + R`
 
-## Test and Deploy
+## 圖片與完整分享檔
 
-Use the built-in continuous integration in GitLab.
+`index.html` 的初始圖片已無損拆到 `assets/images/`。提交時必須同時包含 HTML 與整個 `assets/` 目錄。
 
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/topics/autodevops/requirements/)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ci/environments/protected_environments/)
+「備份 JSON」與「匯出完整 HTML」會把圖片一併封裝。完整分享 HTML 可以單獨傳送與開啟，但檔案可能很大，不要直接拿它覆蓋 repository 裡的 `index.html`。
 
-***
+若需要把新的完整分享檔放回專案：
 
-# Editing this README
+1. 先用完整分享檔取代 `index.html`。
+2. 執行：
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+   ```sh
+   python3 scripts/externalize-images.py index.html
+   ```
 
-## Suggestions for a good README
+3. 一併提交更新後的 `index.html` 與 `assets/images/`。
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+轉換腳本不會降低畫質，也不會自動刪除舊圖片。
 
-## Name
-Choose a self-explaining name for your project.
+## Supabase schema
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+資料庫結構位於：
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+```text
+supabase/migrations/
+```
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+需要在新的個人 Supabase Project 建立相同資料表與圖片 bucket 時，可先連結專案再套用 migration：
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+```sh
+supabase login
+supabase link --project-ref YOUR_PROJECT_ID
+supabase db push
+```
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+前端只能使用 Supabase publishable key；不可把 secret key 或 service-role key 放進 `index.html`。

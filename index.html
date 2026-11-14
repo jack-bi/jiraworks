@@ -94,7 +94,7 @@ select.select option{background:#fff;color:#17273d;font-weight:500}
     <button type="button" class="nav-btn" data-tab="groups" aria-current="false"><span class="nav-icon">▤</span><span class="nav-text">同系列議題</span></button>
     <button type="button" class="nav-btn" data-tab="list" aria-current="false"><span class="nav-icon">≡</span><span class="nav-text">全部清單</span></button>
   </nav>
-  <div class="aside-note"><b id="workModeLabel">Supabase 即時同步</b><p id="workModeInfo">牌卡、留言與專案資料由 Supabase 保存；其他瀏覽器的修改會自動同步。</p></div>
+  <div class="aside-note"><b id="workModeLabel">GitHub Pages × Supabase</b><p id="workModeInfo">GitHub Pages 提供工作台；牌卡、留言與圖片由 Supabase 保存並跨瀏覽器同步。</p></div>
 </aside>
 <main class="main">
   <header class="topline"><div><p class="eyebrow">ISSUE TRIAGE / 2026.11.11</p><h1 class="h1">Jira 牌卡盤點與合併工作台 <span style="font-size:12px;color:#7991a5;font-weight:600">V5</span></h1><p class="lead">53 張 Jira 牌卡｜九階段工作看板｜四色問題優先級｜點擊編輯、分工追蹤及合併。</p></div>
@@ -110,7 +110,7 @@ select.select option{background:#fff;color:#17273d;font-weight:500}
     </div>
   </header>
   <div id="stats" class="stat-grid"></div>
-  <div class="notice"><span style="font-size:17px">ⓘ</span><span><strong>合併原則：</strong>點擊任一牌卡可編輯標題、問題內容、上傳問題截圖、緊急程度、看板階段與負責人。「同一版型」或「同樣要求調間距」不等於重複開單。先比對裝置範圍、畫面、重現條件與驗收標準；確認後再指定主牌卡及被合併牌卡。<strong>牌卡、專案與留言會寫入 Supabase 並即時同步；圖片檔本身目前仍保存在此瀏覽器，tasks 只同步附件 metadata。</strong></span></div>
+  <div class="notice"><span style="font-size:17px">ⓘ</span><span><strong>合併原則：</strong>點擊任一牌卡可編輯標題、問題內容、上傳問題截圖、緊急程度、看板階段與負責人。「同一版型」或「同樣要求調間距」不等於重複開單。先比對裝置範圍、畫面、重現條件與驗收標準；確認後再指定主牌卡及被合併牌卡。<strong>牌卡、專案、留言與新上傳圖片都會寫入 Supabase，並同步至其他電腦。</strong></span></div>
   <div id="syncBanner" class="sync-note loading">正在連線 Supabase…</div>
   <div id="shareBanner" class="share-note" hidden=""></div>
   <div id="workspace"></div>
@@ -125,6 +125,7 @@ select.select option{background:#fff;color:#17273d;font-weight:500}
 'use strict';
 const SUPABASE_URL='https://vqhwrvfkoszjmhdtnqto.supabase.co';
 const SUPABASE_KEY='sb_publishable_T-XAVsywxC6t2ykk6eY-Dw_DL96LrRB'; // 填入 Supabase 專案的 public anon/publishable key。
+const IMAGE_BUCKET='task-images';
 let supabaseClient=null,realtimeChannel=null,realtimeReloadTimer=null,remoteWriteDepth=0;
 let remoteProjects=[],remoteTasks=[],remoteComments=[],activeProjectId=null;
 const SEED_ROWS = [["FBCOM-134", "首頁 >> 保險精選 >> 快捷 >> 保險保障指引-D2版型", "暫不處理"], ["FBCOM-207", "【首頁/全部商品/保險利率查詢/貨幣帳戶宣告利率】萬年曆問題", "暫不處理"], ["FBCOM-283", "宣告利率查詢畫面", "暫不處理"], ["FBCOM-425", "[前台][UIUX]保險精選-因應不同裝的編排呈現", "暫不處理"], ["FBCOM-495", "[CE] 常見問題搜尋欄送出後 CE_FIELD_SUBMIT無資料", "暫不處理"], ["FBCOM-511", "<公開部> 各版型連結都須有「是否另開新視窗的勾選欄位」", "暫不處理"], ["FBCOM-648", "[CE]版型新增數位軌跡編碼", "暫不處理"], ["FBCOM-654", "【前台】富邦人壽APP圖、QRcode須更新", "暫不處理"], ["FBCOM-663", "首頁 >> 全部商品 >> 個人保險 >> 還本/養老型保險(C1)-商品搬遷新增異常", "暫不處理"], ["FBCOM-673", "後台-C11-1版型-無法回到前一頁(不應該回到第一頁)", "暫不處理"], ["FBCOM-706", "C5-1上稿草稿(預覽時)會蓋過原來已上稿資料", "暫不處理"], ["FBCOM-732", "後台-多語系-檔案發佈後，內容管理看不到已上架的檔案", "暫不處理"], ["FBCOM-738", "C5-1上稿時<新增資料>功能需有防呆機制", "暫不處理"], ["FBCOM-803", "公開揭露事項-保險商品-分紅保單紅利", "暫不處理"], ["FBCOM-804", "【CELEBRUS】埋碼D5版型QA沒有數位軌跡編碼", "暫不處理"], ["FBCOM-819", "<公開部>首驗-無法刪除資料", "暫不處理"], ["FBCOM-22", "[前台][IT]請協助將專案中各功能補上註解", "待討論"], ["FBCOM-26", "[前台][IT] 常用色碼與圓角尺寸請整理。", "待討論"], ["FBCOM-755", "[前台] [IT] Andriod裝置 - 全站下載功能異常，PDF檔案無法下載", "待討論"], ["FBCOM-607", "[前台][IT] Z2-1版型，區塊1選項「檔案」前台未正常呈現", "TO DO"], ["FBCOM-784", "[前台][IT] 多版型大網白色區塊內縮間距調整", "TO DO"], ["FBCOM-449", "[前台][UIUX] 移除單選切換時的動態、下拉選單樣式調整[UI/UX優化]", "問題查詢中"], ["FBCOM-482", "[前台][IT] C7-1版型，樣式與間距調整", "問題查詢中"], ["FBCOM-496", "[前台][IT] C7-2版型，樣式與間距調整", "問題查詢中"], ["FBCOM-499", "[前台][IT] C8-1版型，樣式與間距調整[UI/UX優化]", "問題查詢中"], ["FBCOM-501", "[前台][IT] C8-2版型，樣式與間距調整", "問題查詢中"], ["FBCOM-506", "[前台][IT] C11-1版型，樣式與間距調整", "問題查詢中"], ["FBCOM-514", "[前台][IT] 公開揭露事項，小網共用區塊的間距不一致", "問題查詢中"], ["FBCOM-521", "[前台][IT] C14版型，大小網樣式與間距調整", "問題查詢中"], ["FBCOM-522", "[前台][IT] C14版型，大網樣式與間距調整", "問題查詢中"], ["FBCOM-523", "[前台][IT] C14版型，小網樣式與間距調整", "問題查詢中"], ["FBCOM-524", "[前台][IT] C14版型，內容摘要調整", "問題查詢中"], ["FBCOM-532", "[前台][IT] C15版型，後台設定 H2/H3 標題，前台未依 H2/H3 樣式呈現", "問題查詢中"], ["FBCOM-538", "[前台][IT] C15版型，大網樣式與間距調整", "問題查詢中"], ["FBCOM-539", "[前台][IT] C15版型，小網樣式與間距調整", "問題查詢中"], ["FBCOM-540", "[前台][IT] D4版型，大網樣式與間距調整", "問題查詢中"], ["FBCOM-541", "[前台][IT] D4版型，小網樣式與間距調整[UI/UX優化]", "問題查詢中"], ["FBCOM-545", "[前台][IT] 頁籤底線覆蓋切換箭頭區塊", "問題查詢中"], ["FBCOM-553", "[前台][IT] D6版型，大小網間距調整", "問題查詢中"], ["FBCOM-558", "[前台][IT] E1版型，小網間距調整", "問題查詢中"], ["FBCOM-565", "[前台][IT] E2版型，小網樣式與間距調整", "問題查詢中"], ["FBCOM-566", "[前台][IT] E2版型，大網樣式與間距調整", "問題查詢中"], ["FBCOM-578", "[前台][IT] E3版型，間距調整", "問題查詢中"], ["FBCOM-581", "[前台][IT] E4版型，間距調整", "問題查詢中"], ["FBCOM-589", "[前台][IT] E5版型，後台設定文章內容對齊方式，前台未顯示對應樣式", "問題查詢中"], ["FBCOM-590", "[前台][IT] E5版型，間距調整", "問題查詢中"], ["FBCOM-599", "[前台][IT] Z1版型，小網間距調整", "問題查詢中"], ["FBCOM-601", "[前台][IT] 金融友善專區小網天版調整", "問題查詢中"], ["FBCOM-608", "[前台][IT] Z2-1版型，大網樣式與間距調整", "問題查詢中"], ["FBCOM-609", "[前台][IT] Z2-1版型，小網樣式與間距調整", "問題查詢中"], ["FBCOM-348", "[前台][IT] A1 情境商品牌卡排版", "IT 開發"], ["FBCOM-474", "[前台][IT] B4版型文字樣式與間距調整[UI/UX優化]", "IT 開發"], ["FBCOM-520", "[前台][IT] C11-2版型，大網間距調整", "IT 開發"]];
@@ -187,7 +188,9 @@ function validateAttachments(input){
   seen.add(item.id);
   const type=String(item.type||'');if(!/^image\/(png|jpeg|webp|gif)$/.test(type))throw Error('圖片格式不正確');
   const size=Number(item.size)||0;if(size<0||size>8_000_000)throw Error('圖片附件超過容量限制');
-  return {id:item.id,name:String(item.name??'截圖').slice(0,150),type,size,createdAt:String(item.createdAt||'').slice(0,50)};
+  const storagePath=String(item.storagePath||'');
+  if(storagePath&&!/^images\/img_[a-zA-Z0-9_-]{8,100}\.(?:png|jpg|webp|gif)$/.test(storagePath))throw Error('圖片雲端路徑不正確');
+  return {id:item.id,name:String(item.name??'截圖').slice(0,150),type,size,createdAt:String(item.createdAt||'').slice(0,50),...(storagePath?{storagePath}:{})};
  });
 }
 function validate(raw){
@@ -294,7 +297,7 @@ function subscribeRealtime(){
   realtimeChannel.subscribe(status=>{if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')setSyncStatus('⚠ Realtime 連線失敗，資料仍可手動重新載入','error');});
  }catch(error){reportError('啟用 Realtime',error);}
 }
-// 圖片 Blob 暫存於 IndexedDB；附件 metadata 由 Supabase tasks.attachments 同步。
+// 新圖片存入 Supabase Storage；IndexedDB 僅保留為舊版圖片的相容讀取來源。
 const IMG_DB='fbcom-issue-images-v1',IMG_MAX=8_000_000,IMG_PER_CARD=12;
 let attachmentDraft=null,previewUrls=[],galleryVersion=0,saveBusy=false;
 function openImageDb(){
@@ -305,15 +308,24 @@ function openImageDb(){
   req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||Error('無法開啟圖片儲存空間'));
  });
 }
-async function loadImageBlob(id){
+function imageExtension(type){return type==='image/jpeg'?'jpg':type.replace('image/','')}
+function imageStoragePath(id,type){return `images/${id}.${imageExtension(type)}`}
+async function loadImageBlob(meta){
+ const id=typeof meta==='string'?meta:meta.id,storagePath=typeof meta==='string'?'':meta.storagePath||'';
  if(VOLATILE_IMAGES.has(id))return VOLATILE_IMAGES.get(id);
+ if(storagePath){
+  const {data,error}=await requireSupabase().storage.from(IMAGE_BUCKET).download(storagePath);
+  if(error)throw Error('Supabase 圖片下載失敗：'+error.message);
+  if(!data||!/^image\/(?:png|jpeg|webp|gif)$/.test(data.type)||data.size>IMG_MAX)throw Error('Supabase 圖片格式或容量不正確');
+  return data;
+ }
  // 內嵌圖片永遠是分享快照的一部分，即使接收者的 IndexedDB 全空也可以看圖。
  if(Object.prototype.hasOwnProperty.call(SHARED_IMAGE_DATA,id))return dataUrlToBlob(SHARED_IMAGE_DATA[id]);
  // Git / Pages 版本只記錄相對路徑；匯出時 collectAllImages 會重新嵌入完整圖片。
  if(Object.prototype.hasOwnProperty.call(SHARED_IMAGE_FILES,id)){
   const path=SHARED_IMAGE_FILES[id];
   if(typeof path!=='string'||!/^assets\/images\/[a-f0-9]{64}\.(?:png|jpeg|webp|gif)$/.test(path))throw Error('圖片路徑不正確');
-  if(location.protocol==='file:')throw Error('請透過本機 HTTP 伺服器或 GitLab Pages 開啟此版本，才能讀取外部圖片');
+  if(location.protocol==='file:')throw Error('請透過本機 HTTP 伺服器或 GitHub Pages 開啟此版本，才能讀取外部圖片');
   const response=await fetch(new URL(path,location.href));
   if(!response.ok)throw Error('圖片讀取失敗（HTTP '+response.status+'）');
   const blob=await response.blob();
@@ -327,21 +339,26 @@ async function loadImageBlob(id){
   req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>reject(req.error||Error('讀取圖片失敗'));tx.oncomplete=()=>db.close();tx.onerror=()=>{db.close();reject(tx.error||Error('讀取圖片失敗'));};
  });
 }
-async function updateImageStore(puts,deletes){
- if(!puts.length&&!deletes.length)return;
- for(const item of puts)VOLATILE_IMAGES.set(item.id,item.blob);
- for(const id of deletes)VOLATILE_IMAGES.delete(id);
+async function uploadImageItems(items,{upsert=false}={}){
+ const bucket=requireSupabase().storage.from(IMAGE_BUCKET),uploaded=[];
  try{
-  const db=await openImageDb();
-  await new Promise((resolve,reject)=>{
-   const tx=db.transaction('images','readwrite'),store=tx.objectStore('images');
-   puts.forEach(x=>store.put(x.blob,x.id));deletes.forEach(id=>store.delete(id));
-   tx.oncomplete=()=>{db.close();resolve()};tx.onerror=()=>{db.close();reject(tx.error||Error('圖片儲存失敗，可能是容量不足'))};tx.onabort=()=>{db.close();reject(tx.error||Error('圖片儲存作業取消'))};
-  });
+  for(const item of items){
+   const path=item.storagePath||imageStoragePath(item.id,item.blob.type);
+   const {error}=await bucket.upload(path,item.blob,{contentType:item.blob.type,cacheControl:'3600',upsert});
+   if(error)throw Error(`${item.id}：${error.message}`);
+   item.storagePath=path;VOLATILE_IMAGES.set(item.id,item.blob);uploaded.push(path);
+  }
+  return uploaded;
  }catch(error){
-  console.warn('IndexedDB 無法寫入：圖片僅暫存記憶體，請匯出完整 HTML',error);
-  toast('圖片僅暫存在本次頁面；請匯出完整 HTML 以保存圖片');
+  if(uploaded.length&&!upsert)await bucket.remove(uploaded);
+  throw Error('Supabase 圖片上傳失敗：'+error.message);
  }
+}
+async function removeStorageImages(paths){
+ const clean=[...new Set(paths.filter(path=>/^images\/img_[a-zA-Z0-9_-]{8,100}\.(?:png|jpg|webp|gif)$/.test(path)))];
+ if(!clean.length)return;
+ const {error}=await requireSupabase().storage.from(IMAGE_BUCKET).remove(clean);
+ if(error)console.warn('清除 Supabase 圖片失敗；資料已儲存，但可能留下未引用的圖片',error);
 }
 function blobToDataUrl(blob){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(Error('圖片編碼失敗'));reader.readAsDataURL(blob);});}
 function dataUrlToBlob(data){const match=/^data:(image\/(?:png|jpeg|webp|gif));base64,([A-Za-z0-9+/=]+)$/.exec(data);if(!match)throw Error('圖片格式不正確');const byte=atob(match[2]),arr=new Uint8Array(byte.length);if(arr.length>IMG_MAX)throw Error('圖片備份超過單張容量限制');for(let i=0;i<byte.length;i++)arr[i]=byte.charCodeAt(i);return new Blob([arr],{type:match[1]});}
@@ -372,7 +389,7 @@ async function renderAttachmentGallery(){
  zone.innerHTML=items.length?galleryMarkup(items):'<p class="image-empty">尚未新增截圖；可以從電腦選檔、貼上或直接拖曳圖片。</p>';
  for(const meta of items){
   try{
-   const blob=attachmentDraft.blobs.get(meta.id)||await loadImageBlob(meta.id);
+   const blob=attachmentDraft.blobs.get(meta.id)||await loadImageBlob(meta);
    if(token!==galleryVersion)return;
    const thumb=zone.querySelector(`[data-img="${meta.id}"] .image-thumb`);if(!thumb)continue;
    if(!blob){thumb.innerHTML='<span class="thumb-placeholder missing">圖片已遺失，請移除後重傳</span>';continue;}
@@ -390,7 +407,7 @@ async function addImageFiles(files){
   if(attachmentDraft.items.length>=IMG_PER_CARD){errors.push('每張牌卡最多 12 張圖片');break;}
   try{
    const blob=await imageFileToBlob(file),id=makeImageId();
-   attachmentDraft.items.push({id,name:(file.name||'貼上截圖').slice(0,150),type:blob.type,size:blob.size,createdAt:stamp()});
+   attachmentDraft.items.push({id,name:(file.name||'貼上截圖').slice(0,150),type:blob.type,size:blob.size,createdAt:stamp(),storagePath:imageStoragePath(id,blob.type)});
    attachmentDraft.blobs.set(id,blob);attachmentDraft.changed=true;added++;
   }catch(err){errors.push((file.name||'圖片')+'：'+err.message);}
  }
@@ -398,12 +415,17 @@ async function addImageFiles(files){
  if(errors.length)alert('部分圖片無法新增：\n'+errors.join('\n'));
  else if(added)toast(`已加入 ${added} 張圖片，請按儲存變更`);
 }
-async function saveImageDraft(original){
- if(!attachmentDraft)return;
+async function uploadImageDraft(){
+ if(!attachmentDraft)return [];
+ const pending=attachmentDraft.items.filter(x=>attachmentDraft.blobs.has(x.id)).map(meta=>({id:meta.id,blob:attachmentDraft.blobs.get(meta.id),storagePath:meta.storagePath}));
+ const uploaded=await uploadImageItems(pending);
+ for(const item of pending){const meta=attachmentDraft.items.find(x=>x.id===item.id);if(meta)meta.storagePath=item.storagePath;}
+ return uploaded;
+}
+function removedImagePaths(original){
+ if(!attachmentDraft)return [];
  const keep=new Set(attachmentDraft.items.map(x=>x.id));
- const puts=attachmentDraft.items.filter(x=>attachmentDraft.blobs.has(x.id)).map(x=>({id:x.id,blob:attachmentDraft.blobs.get(x.id)}));
- const deletes=original.filter(x=>!keep.has(x.id)).map(x=>x.id);
- await updateImageStore(puts,deletes);
+ return original.filter(x=>!keep.has(x.id)&&x.storagePath).map(x=>x.storagePath);
 }
 function removeImage(id){if(!attachmentDraft)return;attachmentDraft.items=attachmentDraft.items.filter(x=>x.id!==id);attachmentDraft.blobs.delete(id);attachmentDraft.changed=true;renderAttachmentGallery();updateDirtyBadge();}
 function openImageViewer(id){
@@ -486,7 +508,7 @@ function detailModal(){
      <input type="file" id="imageFileInput" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden>
      <div class="image-drop" id="imageDropZone" role="button" tabindex="0" aria-label="選擇圖片或拖曳圖片到此上傳"><b>↥　點擊選擇圖片，或拖曳截圖到這裡</b><span>可在「詳細內容」欄直接 Ctrl / ⌘ + V 貼上截圖；支援 PNG、JPG、WEBP、GIF</span></div>
      <div id="imageGallery" class="image-gallery" aria-live="polite"></div>
-     <div class="help">圖片平常儲存於瀏覽器；按「匯出完整 HTML」會把圖片直接封進檔案，同仁不用另外匯入。每張圖片上限 8 MB。</div>
+     <div class="help">新圖片會上傳至 Supabase Storage，其他電腦可同步查看；匯出完整 HTML 時仍會把圖片封進檔案。每張圖片上限 8 MB。</div>
     </div>
   <div class="field"><label for="detailTags">自訂標籤（逗號分隔）</label><input class="input" id="detailTags" value="${attr(c.tags.join(', '))}" placeholder="例如：UIUX, 待BU確認"></div>
   <div class="field"><label for="detailNotes">處理紀錄／合併判斷／驗收備註</label><textarea class="textarea editor-long" id="detailNotes" maxlength="10000" placeholder="記錄排查結果、處理進度、討論結論、合併依據、業主回覆及驗收方式等">${escapeHtml(c.notes)}</textarea></div>
@@ -511,7 +533,7 @@ function addModal(){
      <input type="file" id="imageFileInput" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden>
      <div class="image-drop" id="imageDropZone" role="button" tabindex="0" aria-label="選擇圖片或拖曳圖片到此上傳"><b>↥　點擊選擇圖片，或拖曳截圖到這裡</b><span>可在「詳細內容」欄直接 Ctrl / ⌘ + V 貼上截圖；支援 PNG、JPG、WEBP、GIF</span></div>
      <div id="imageGallery" class="image-gallery" aria-live="polite"></div>
-     <div class="help">圖片平常儲存於瀏覽器；按「匯出完整 HTML」會把圖片直接封進檔案，同仁不用另外匯入。每張圖片上限 8 MB。</div>
+     <div class="help">新圖片會上傳至 Supabase Storage，其他電腦可同步查看；匯出完整 HTML 時仍會把圖片封進檔案。每張圖片上限 8 MB。</div>
     </div>
  </form></div><div class="modal-foot"><button class="btn" data-close="1">取消</button><button class="btn btn-primary" id="saveNew">新增牌卡</button></div>`;
 }
@@ -521,18 +543,20 @@ async function saveDetail(){
  const c=issue(modal?.id);if(!c||saveBusy)return;const v=formDetailValues();if(!v)return;
  const title=v.title.trim();if(!title){document.getElementById('detailTitle').focus();toast('請先輸入牌卡標題');return;}
  if(!STATUS.includes(v.status)||!PRIORITIES.includes(v.priority)){toast('資料狀態不正確，請重新選擇');return;}
- const dirty=detailDirty();saveBusy=true;setSaveLoading(true);
+ const dirty=detailDirty();let uploadedPaths=[];saveBusy=true;setSaveLoading(true);
  try{
+  if(attachmentDraft?.changed)uploadedPaths=await uploadImageDraft();
   const next={...c,title,description:v.description.slice(0,30000),status:v.status,priority:v.priority,owner:v.owner.trim().slice(0,80),
    tags:v.tags.split(/[,，]/).map(t=>t.trim()).filter(Boolean).slice(0,20),notes:v.notes.slice(0,10000),attachments:attachmentDraft?.items.map(x=>({...x}))||c.attachments||[]};
   remoteWriteDepth++;const {error}=await requireSupabase().from('tasks').update({title:next.title,description:next.description,status:next.status,
    priority:next.priority,assignee:next.owner||null,tags:next.tags,notes:next.notes,attachments:next.attachments}).eq('id',c.dbId);if(error)throw error;
-  if(attachmentDraft?.changed)await saveImageDraft(c.attachments||[]);
+  uploadedPaths=[];
+  if(attachmentDraft?.changed)await removeStorageImages(removedImagePaths(c.attachments||[]));
   const remoteRow=remoteTasks.find(row=>row.id===c.dbId);if(remoteRow)Object.assign(remoteRow,{title:next.title,description:next.description,status:next.status,priority:next.priority,assignee:next.owner||null,tags:next.tags,notes:next.notes,attachments:next.attachments});
   Object.assign(c,next);
   if(dirty)state.history.push({action:'編輯牌卡',at:stamp(),description:`${c.id} 編輯標題／內容／圖片／看板狀態／問題狀態／負責人／備註`});
   render();closeModal(true);setSyncStatus(`✓ ${c.id} 已同步 · ${stamp()}`);toast(`${c.id} 已儲存（含 ${c.attachments.length} 張圖片）`);
- }catch(err){reportError('儲存牌卡',err)}finally{remoteWriteDepth=Math.max(0,remoteWriteDepth-1);saveBusy=false;setSaveLoading(false)}
+ }catch(err){if(uploadedPaths.length)await removeStorageImages(uploadedPaths);reportError('儲存牌卡',err)}finally{remoteWriteDepth=Math.max(0,remoteWriteDepth-1);saveBusy=false;setSaveLoading(false)}
 }
 async function addNew(){
  if(saveBusy)return;
@@ -543,14 +567,16 @@ async function addNew(){
  if(issue(id)){alert('此 Jira 編號已存在。');return;}
  if(!title){alert('請輸入牌卡標題。');return;}
  if(!STATUS.includes(status)||!PRIORITIES.includes(priority)){alert('看板或問題狀態不正確。');return;}
- saveBusy=true;setSaveLoading(true);
+ let uploadedPaths=[];saveBusy=true;setSaveLoading(true);
  try{
+  if(attachmentDraft?.changed)uploadedPaths=await uploadImageDraft();
   const card={id,title,originalTitle:title,status,priority,owner:owner.slice(0,80),order:Math.max(-1,...state.cards.map(x=>x.order))+1,description:description.slice(0,30000),notes:'',tags:[],source:'新增',attachments:attachmentDraft?.items.map(x=>({...x}))||[]};
   remoteWriteDepth++;const {data,error}=await requireSupabase().from('tasks').insert({project_id:activeProjectId,task_key:id,title,description:card.description,
    status,assignee:card.owner||null,priority,position:card.order,tags:[],notes:'',source:'新增',attachments:card.attachments}).select('*').single();if(error)throw error;
-  if(attachmentDraft?.changed)await saveImageDraft([]);card.dbId=data.id;card.createdAt=data.created_at;card.updatedAt=data.updated_at;state.cards.push(card);
+  uploadedPaths=[];
+  card.dbId=data.id;card.createdAt=data.created_at;card.updatedAt=data.updated_at;state.cards.push(card);
   remoteTasks.push(data);render();closeModal(true);setSyncStatus(`✓ ${id} 已新增並同步 · ${stamp()}`);toast(`已新增 ${id}（含 ${card.attachments.length} 張圖片）`);
- }catch(err){reportError('新增牌卡',err)}finally{remoteWriteDepth=Math.max(0,remoteWriteDepth-1);saveBusy=false;setSaveLoading(false)}
+ }catch(err){if(uploadedPaths.length)await removeStorageImages(uploadedPaths);reportError('新增牌卡',err)}finally{remoteWriteDepth=Math.max(0,remoteWriteDepth-1);saveBusy=false;setSaveLoading(false)}
 }
 function startMerge(ids=[],masterId='',reason=''){const clean=ids.filter(id=>issue(id));mergeDraft={selected:new Set(clean),masterId:masterId||clean[0]||'',reason};openModal('merge');}
 async function updateTaskPatches(patches,action){
@@ -578,7 +604,7 @@ async function collectAllImages(){
  for(const c of state.cards){for(const m of c.attachments||[]){
   if(Object.prototype.hasOwnProperty.call(imageBlobs,m.id))continue;
   try{
-   const blob=await loadImageBlob(m.id);
+   const blob=await loadImageBlob(m);
    if(!blob){missing.push(c.id+' / '+m.name);continue;}
    imageBlobs[m.id]=await blobToDataUrl(blob);
   }catch(err){missing.push(c.id+' / '+m.name+'（'+err.message+'）');}
@@ -655,17 +681,18 @@ document.getElementById('importFile').addEventListener('change',async e=>{
  const file=e.target.files[0];if(!file)return;
  try{
   if(file.size>90_000_000)throw Error('JSON 備份超過 90 MB，請拆分後匯入');
-  const raw=JSON.parse(await file.text()),next=validate(raw),referenced=new Set(next.cards.flatMap(c=>c.attachments.map(m=>m.id)));
+  const raw=JSON.parse(await file.text()),next=validate(raw),attachmentById=new Map(next.cards.flatMap(c=>c.attachments.map(m=>[m.id,m]))),referenced=new Set(attachmentById.keys());
   const entries=[];
   if(referenced.size){
    if(!raw.imageBlobs||typeof raw.imageBlobs!=='object')throw Error('備份含圖片紀錄，但缺少圖片資料；請重新匯出「含圖片備份」');
    for(const id of referenced){
     const dataUrl=raw.imageBlobs[id];if(typeof dataUrl!=='string'||dataUrl.length>12_000_000)throw Error('圖片 '+id+' 遺失或過大');
-    entries.push({id,blob:dataUrlToBlob(dataUrl)});
+    const blob=dataUrlToBlob(dataUrl),meta=attachmentById.get(id);meta.storagePath=imageStoragePath(id,blob.type);
+    entries.push({id,blob,storagePath:meta.storagePath});
    }
   }
   if(!confirm(`即將匯入 ${next.cards.length} 張牌卡、${entries.length} 張圖片及 ${Object.keys(next.merges).length} 筆合併關聯，並取代目前專案的 Supabase 牌卡。\n\n此操作會同步至所有瀏覽器，建議先匯出 JSON 備份。確定繼續？`))return;
-  if(entries.length)await updateImageStore(entries,[]);
+  if(entries.length)await uploadImageItems(entries,{upsert:true});
   await importStateToSupabase(next,{replace:!!activeProjectId});selected.clear();toast('JSON 備份與 '+entries.length+' 張圖片已匯入 Supabase');
  }catch(err){reportError('匯入 JSON',err)}finally{e.target.value='';}
 });
@@ -709,45 +736,5 @@ if(SHARE_PAYLOAD){
 }
 render();
 try{requireSupabase();subscribeRealtime();loadRemoteData();}catch(error){reportError('初始化 Supabase',error);document.getElementById('btnImportExisting').classList.remove('hide');document.getElementById('btnAdd').disabled=true;}
-</script>
-
-
-<!-- Code injected by live-server -->
-<script>
-	// <![CDATA[  <-- For SVG support
-	if ('WebSocket' in window) {
-		(function () {
-			function refreshCSS() {
-				var sheets = [].slice.call(document.getElementsByTagName("link"));
-				var head = document.getElementsByTagName("head")[0];
-				for (var i = 0; i < sheets.length; ++i) {
-					var elem = sheets[i];
-					var parent = elem.parentElement || head;
-					parent.removeChild(elem);
-					var rel = elem.rel;
-					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
-						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
-						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
-					}
-					parent.appendChild(elem);
-				}
-			}
-			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
-			var address = protocol + window.location.host + window.location.pathname + '/ws';
-			var socket = new WebSocket(address);
-			socket.onmessage = function (msg) {
-				if (msg.data == 'reload') window.location.reload();
-				else if (msg.data == 'refreshcss') refreshCSS();
-			};
-			if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
-				console.log('Live reload enabled.');
-				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
-			}
-		})();
-	}
-	else {
-		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
-	}
-	// ]]>
 </script>
 </body></html>
